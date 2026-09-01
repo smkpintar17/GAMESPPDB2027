@@ -1,10 +1,5 @@
 {
-  "name": "smk-pintar-runner-3d",
+  "name": "gamesppdb2027",
   "version": "1.0.0",
-  "description": "Game 3D Subway Princess Runner SMK PINTAR (SMK 17 Muncar) terintegrasi Vercel & Google Sheets",
-  "main": "index.html",
-  "scripts": {
-    "start": "serve ."
-  },
-  "dependencies": {}
+  "type": "module"
 }
