@@ -1,45 +1,55 @@
 // Vercel Serverless Function - Integrated Leaderboard & Google Sheets API
 
+const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL || "";
+
 export default async function handler(req, res) {
-  const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL || "";
+  // Tambahkan Header CORS agar frontend HTML bisa berkomunikasi lancar
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
   if (req.method === 'POST') {
-    const { nama, whatsapp, level, jawaban, skor } = req.body;
-
     try {
-      if (GOOGLE_SCRIPT_URL) {
-        await fetch(GOOGLE_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nama, whatsapp, level, jawaban, skor })
-        });
+      if (!GOOGLE_SCRIPT_URL) {
+        return res.status(500).json({ error: "GOOGLE_SCRIPT_URL belum dikonfigurasi di Vercel!" });
       }
-      return res.status(200).json({ status: 'success', message: 'Data berhasil dikirim!' });
+
+      // Mengirim POST ke Google Script dengan penanganan Redirect otomatis
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8', // Menggunakan text/plain mencegah CORS Preflight error di Google
+        },
+        redirect: 'follow', // Mengikuti redirect 302 dari Google Script
+        body: JSON.stringify(req.body)
+      });
+
+      const responseText = await response.text();
+      return res.status(200).json({ status: 'success', data: responseText });
     } catch (error) {
       return res.status(500).json({ status: 'error', message: error.message });
     }
   } 
-  
   else if (req.method === 'GET') {
     try {
-      if (GOOGLE_SCRIPT_URL) {
-        const response = await fetch(GOOGLE_SCRIPT_URL);
-        const data = await response.json();
-        return res.status(200).json(data);
+      if (!GOOGLE_SCRIPT_URL) {
+        return res.status(500).json({ error: "GOOGLE_SCRIPT_URL belum dikonfigurasi di Vercel!" });
       }
-      
-      // Default Fallback Data jika belum dipasang Google Apps Script
-      return res.status(200).json([
-        { nama: "Siswa Contoh 1", level: 10, skor: 10000 },
-        { nama: "Siswa Contoh 2", level: 5, skor: 5000 }
-      ]);
+
+      const response = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
+      const data = await response.json();
+      return res.status(200).json(data);
     } catch (error) {
       return res.status(500).json({ status: 'error', message: error.message });
     }
-  } 
-  
-  else {
-    res.setHeader('Allow', ['GET', 'POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
