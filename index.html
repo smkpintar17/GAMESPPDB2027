@@ -2,28 +2,39 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SMK PINTAR 3D Runner - SMK 17 Muncar</title>
   <style>
-    body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #111; color: #fff; }
+    * { touch-action: manipulation; box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #4a90e2; color: #fff; user-select: none; }
     #canvas-container { width: 100vw; height: 100vh; display: block; }
-    .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 15px; box-sizing: border-box; }
+    
+    .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; }
     .interactive { pointer-events: auto; }
-    .hud { background: rgba(0, 0, 0, 0.6); padding: 10px 20px; border-radius: 10px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); }
-    .hud-title { font-weight: bold; font-size: 18px; color: #f1c40f; }
-    .hud-stats { font-size: 16px; margin-top: 5px; }
-    .btn { background: #e74c3c; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.2s; }
-    .btn:hover { background: #c0392b; transform: scale(1.05); }
-    .btn-next { background: #2ecc71; margin-top: 10px; }
+    
+    .hud { background: rgba(255, 255, 255, 0.85); color: #2c3e50; padding: 8px 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 2px solid #3498db; }
+    .hud-title { font-weight: 800; font-size: 16px; color: #2980b9; }
+    .hud-stats { font-size: 14px; margin-top: 2px; font-weight: 600; }
+    
+    .btn { background: #e74c3c; color: white; border: none; padding: 12px 18px; font-weight: bold; font-size: 14px; border-radius: 25px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .btn:active { transform: scale(0.95); }
+    .btn-next { background: #2ecc71; }
     .btn-next:hover { background: #27ae60; }
-    .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #2c3e50; padding: 25px; border-radius: 12px; border: 2px solid #f1c40f; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-    input[type="text"], select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; box-sizing: border-box; }
+    
+    /* Virtual Mobile Touch Controls */
+    .touch-controls { display: flex; justify-content: space-between; width: 100%; padding: 0 10px 10px 10px; }
+    .touch-btn { width: 65px; height: 65px; background: rgba(255, 255, 255, 0.4); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
+    .touch-btn:active { background: rgba(255, 255, 255, 0.7); color: #2c3e50; }
+
+    .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; color: #2c3e50; padding: 20px; border-radius: 20px; border: 4px solid #f1c40f; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.3); }
+    input[type="text"] { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 2px solid #bdc3c7; box-sizing: border-box; font-size: 14px; outline: none; }
+    input[type="text"]:focus { border-color: #3498db; }
+    
     .hidden { display: none !important; }
-    .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-    .leaderboard-table th, .leaderboard-table td { padding: 8px; border-bottom: 1px solid #444; text-align: left; }
-    .leaderboard-table th { color: #f1c40f; }
+    .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    .leaderboard-table th, .leaderboard-table td { padding: 8px; border-bottom: 1px solid #ecf0f1; text-align: left; }
+    .leaderboard-table th { color: #e67e22; }
   </style>
-  <!-- Three.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
@@ -32,36 +43,44 @@
 
   <div class="ui-layer">
     <!-- Top HUD -->
-    <div style="display: flex; justify-content: space-between;">
+    <div style="display: flex; justify-content: space-between; gap: 8px;">
       <div class="hud">
         <div class="hud-title">SMK 17 MUNCAR</div>
         <div class="hud-stats">Player: <span id="disp-name">-</span></div>
       </div>
       <div class="hud" style="text-align: right;">
-        <div class="hud-stats">Level: <span id="disp-level" style="color:#2ecc71;">1</span>/10</div>
-        <div class="hud-stats">Koin: <span id="disp-coins" style="color:#f1c40f;">0</span> | Skor: <span id="disp-score">0</span></div>
+        <div class="hud-stats">Lvl: <span id="disp-level" style="color:#2ecc71;">1</span>/10</div>
+        <div class="hud-stats">🪙 <span id="disp-coins" style="color:#f39c12;">0</span> | ⭐ <span id="disp-score">0</span></div>
       </div>
     </div>
 
-    <!-- Bottom Controls -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-      <button class="btn interactive btn-next" onclick="openQuizModal()">⏩ Lanjut Ke Level Berikutnya</button>
-      <button class="btn interactive" onclick="openLeaderboard()">🏆 Leaderboard</button>
+    <!-- Bottom Action Buttons & Touch Controls -->
+    <div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <button class="btn interactive btn-next" onclick="openQuizModal()">⏩ Lanjut Level</button>
+        <button class="btn interactive" style="background: #9b59b6;" onclick="openLeaderboard()">🏆 Peringkat</button>
+      </div>
+      
+      <!-- Mobile D-Pad Touch Controls -->
+      <div class="touch-controls interactive">
+        <div class="touch-btn" onclick="movePlayer(-1)">◀</div>
+        <div class="touch-btn" onclick="movePlayer(1)">▶</div>
+      </div>
     </div>
   </div>
 
   <!-- Modal Register -->
   <div id="modal-register" class="modal interactive">
-    <h2>Pendaftaran Game</h2>
+    <h2 style="color:#2980b9; margin-top:0;">Pendaftaran Game</h2>
     <p>Selamat datang di SMK PINTAR 3D Runner!</p>
     <input type="text" id="reg-nama" placeholder="Nama Lengkap Siswa" required>
     <input type="text" id="reg-wa" placeholder="Nomor WhatsApp (+628...)" required>
-    <button class="btn btn-next" style="width: 100%;" onclick="startPlay()">Mulai Bermain</button>
+    <button class="btn btn-next" style="width: 100%; margin-top: 10px;" onclick="startPlay()">Mulai Bermain</button>
   </div>
 
-  <!-- Modal Quiz / Level Finish -->
+  <!-- Modal Quiz -->
   <div id="modal-quiz" class="modal interactive hidden">
-    <h2 id="quiz-title">Kuis Jurusan</h2>
+    <h2 id="quiz-title" style="color:#e67e22; margin-top:0;">Kuis Jurusan</h2>
     <p id="quiz-desc">Penjelasan Jurusan...</p>
     <div id="quiz-options" style="text-align: left; margin: 15px 0;"></div>
     <button class="btn btn-next" style="width: 100%;" onclick="submitAnswer()">Kirim Jawaban & Lanjut</button>
@@ -69,7 +88,7 @@
 
   <!-- Modal Leaderboard -->
   <div id="modal-leaderboard" class="modal interactive hidden">
-    <h2>Peringkat Top 10</h2>
+    <h2 style="color:#8e44ad; margin-top:0;">Peringkat Top 10</h2>
     <table class="leaderboard-table">
       <thead>
         <tr><th>#</th><th>Nama</th><th>Lvl</th><th>Skor</th></tr>
@@ -78,18 +97,17 @@
         <tr><td colspan="4" style="text-align: center;">Memuat Data...</td></tr>
       </tbody>
     </table>
-    <button class="btn" style="margin-top: 15px; width: 100%;" onclick="closeLeaderboard()">Tutup</button>
+    <button class="btn" style="margin-top: 15px; width: 100%; background: #7f8c8d;" onclick="closeLeaderboard()">Tutup</button>
   </div>
 
   <script>
-    // Data Global Game
     let playerData = { nama: '', whatsapp: '', level: 1, skor: 0, koin: 0 };
     let isPlaying = false;
     let scene, camera, renderer, playerGroup;
     let coins = [], obstacles = [];
-    let speed = 0.3;
+    let speed = 0.35;
+    let touchStartX = 0;
 
-    // Database Kuis 10 Level Jurusan SMK 17 Muncar
     const quizData = [
       { title: "Level 1: Akuntansi (AKL)", desc: "AKL mempelajari pencatatan keuangan bisnis.", q: "Manakah laporan yang mencatat pendapatan & beban?", opts: ["Laporan Laba Rugi", "Neraca", "Jurnal Umum"], ans: 0 },
       { title: "Level 2: Bisnis Daring (BDP)", desc: "BDP fokus pada Pemasaran Digital & E-Commerce.", q: "Apa kepanjangan dari SEO dalam Digital Marketing?", opts: ["Search Engine Optimization", "Social Engine Option", "Sales Executive Online"], ans: 0 },
@@ -106,117 +124,165 @@
     function init3D() {
       const container = document.getElementById('canvas-container');
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x1a1a2e);
-      scene.fog = new THREE.Fog(0x1a1a2e, 10, 80);
+      
+      // Tema Ceria: Langit Cerah & Fog Lembut
+      scene.background = new THREE.Color(0x74b9ff);
+      scene.fog = new THREE.Fog(0x74b9ff, 15, 70);
 
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 5, 10);
+      camera.position.set(0, 4.5, 9);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       container.appendChild(renderer.domElement);
 
-      // Pencahayaan
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      // Pencahayaan Cerah
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
       scene.add(ambientLight);
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
       dirLight.position.set(10, 20, 10);
       scene.add(dirLight);
 
-      // Jalankan Lintasan (Road)
+      // Lintasan Jalan
       const roadGeo = new THREE.PlaneGeometry(10, 200);
-      const roadMat = new THREE.MeshBasicMaterial({ color: 0x333333 });
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0xdfe6e9 });
       const road = new THREE.Mesh(roadGeo, roadMat);
       road.rotation.x = -Math.PI / 2;
       scene.add(road);
 
-      // MENGBUAT KARAKTER PRINCESS DENGAN MAHKOTA ANGKA 17
-      createPrincessCharacter();
+      // Karakter Siswa SMA/SMK 3D
+      createStudentCharacter();
 
-      // Spawn Koin dan Rintangan Gedung
+      // Spawn Koin & Gedung Merah
       spawnElements();
 
-      // Keyboard Listener
+      // Keyboard Controls
       window.addEventListener('keydown', (e) => {
-        if (!isPlaying) return;
-        if (e.key === 'ArrowLeft' || e.key === 'a') {
-          if (playerGroup.position.x > -3) playerGroup.position.x -= 3;
-        } else if (e.key === 'ArrowRight' || e.key === 'd') {
-          if (playerGroup.position.x < 3) playerGroup.position.x += 3;
-        }
+        if (e.key === 'ArrowLeft' || e.key === 'a') movePlayer(-1);
+        if (e.key === 'ArrowRight' || e.key === 'd') movePlayer(1);
       });
 
+      // Swipe Touch Controls untuk HP
+      window.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      window.addEventListener('touchend', (e) => {
+        if (!isPlaying) return;
+        let touchEndX = e.changedTouches[0].clientX;
+        let diffX = touchEndX - touchStartX;
+        if (Math.abs(diffX) > 30) {
+          if (diffX < 0) movePlayer(-1);
+          else movePlayer(1);
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', onWindowResize);
       animate();
     }
 
-    function createPrincessCharacter() {
+    function movePlayer(dir) {
+      if (!isPlaying || !playerGroup) return;
+      if (dir === -1 && playerGroup.position.x > -3) playerGroup.position.x -= 3;
+      if (dir === 1 && playerGroup.position.x < 3) playerGroup.position.x += 3;
+    }
+
+    function createStudentCharacter() {
       playerGroup = new THREE.Group();
 
-      // Gaun / Badan (Kerucut Pink)
-      const bodyGeo = new THREE.ConeGeometry(0.8, 2, 16);
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff6b81 });
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.position.y = 1;
+      // Material
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+      const hairMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+      const shirtMat = new THREE.MeshStandardMaterial({ color: 0xffffff }); // Baju Putih
+      const pantsMat = new THREE.MeshStandardMaterial({ color: 0x74b9ff }); // Celana Abu-abu/Biru Muda
+      const tieMat = new THREE.MeshStandardMaterial({ color: 0x0984e3 });  // Dasi Biru
+      const badgeMat = new THREE.MeshStandardMaterial({ color: 0xd63031 }); // Red Badge
+
+      // Kaki & Celana
+      const legGeo = new THREE.CylinderGeometry(0.18, 0.16, 1.2, 12);
+      const legL = new THREE.Mesh(legGeo, pantsMat);
+      legL.position.set(-0.25, 0.6, 0);
+      const legR = legL.clone();
+      legR.position.x = 0.25;
+      playerGroup.add(legL, legR);
+
+      // Badan / Kemeja Putih
+      const bodyGeo = new THREE.BoxGeometry(0.8, 1.1, 0.45);
+      const body = new THREE.Mesh(bodyGeo, shirtMat);
+      body.position.y = 1.65;
       playerGroup.add(body);
 
+      // Dasi Biru
+      const tieGeo = new THREE.BoxGeometry(0.12, 0.6, 0.05);
+      const tie = new THREE.Mesh(tieGeo, tieMat);
+      tie.position.set(0, 1.7, 0.24);
+      playerGroup.add(tie);
+
+      // Badge Merah Putih di Dada
+      const badgeGeo = new THREE.BoxGeometry(0.15, 0.1, 0.02);
+      const badge = new THREE.Mesh(badgeGeo, badgeMat);
+      badge.position.set(-0.22, 1.9, 0.24);
+      playerGroup.add(badge);
+
       // Kepala
-      const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
-      const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
-      const head = new THREE.Mesh(headGeo, headMat);
-      head.position.y = 2.2;
+      const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
+      const head = new THREE.Mesh(headGeo, skinMat);
+      head.position.y = 2.45;
       playerGroup.add(head);
 
-      // Mahkota Emas
-      const crownGeo = new THREE.CylinderGeometry(0.25, 0.2, 0.3, 8);
-      const crownMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, metalness: 0.8 });
-      const crown = new THREE.Mesh(crownGeo, crownMat);
-      crown.position.y = 2.6;
-      playerGroup.add(crown);
+      // Rambut
+      const hairGeo = new THREE.SphereGeometry(0.37, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const hair = new THREE.Mesh(hairGeo, hairMat);
+      hair.position.y = 2.5;
+      playerGroup.add(hair);
 
-      // Canvas Text 17 Pada Mahkota
-      const canvas = document.createElement('canvas');
-      canvas.width = 64; canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#f1c40f'; ctx.fillRect(0,0,64,64);
-      ctx.fillStyle = '#e74c3c'; ctx.font = 'Bold 36px Arial';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('17', 32, 32);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      const badgeGeo = new THREE.PlaneGeometry(0.3, 0.3);
-      const badgeMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-      const badge = new THREE.Mesh(badgeGeo, badgeMat);
-      badge.position.set(0, 2.65, 0.26);
-      playerGroup.add(badge);
+      // Lengan Kiri & Kanan (Posisi Melipat Sesuai Gambar)
+      const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.7, 12);
+      const armL = new THREE.Mesh(armGeo, shirtMat);
+      armL.rotation.z = Math.PI / 3;
+      armL.position.set(-0.35, 1.6, 0.1);
+      
+      const armR = new THREE.Mesh(armGeo, shirtMat);
+      armR.rotation.z = -Math.PI / 3;
+      armR.position.set(0.35, 1.6, 0.1);
+      playerGroup.add(armL, armR);
 
       playerGroup.position.set(0, 0, 4);
       scene.add(playerGroup);
     }
 
     function spawnElements() {
-      // Clear Old
       coins.forEach(c => scene.remove(c));
       obstacles.forEach(o => scene.remove(o));
       coins = []; obstacles = [];
 
       const lanes = [-3, 0, 3];
       for (let i = 0; i < 15; i++) {
-        // Spawn Coins
-        const coinGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16);
-        const coinMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f });
+        // Koin Emas
+        const coinGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.08, 16);
+        const coinMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, metalness: 0.5 });
         const coin = new THREE.Mesh(coinGeo, coinMat);
         coin.rotation.x = Math.PI / 2;
-        coin.position.set(lanes[Math.floor(Math.random()*3)], 0.5, -i * 10 - 10);
+        coin.position.set(lanes[Math.floor(Math.random()*3)], 0.8, -i * 10 - 10);
         scene.add(coin);
         coins.push(coin);
 
-        // Spawn Building Obstacles (Gedung Sekolah)
+        // Obstacle Gedung Warna Merah
         if (i % 2 === 0) {
-          const obsGeo = new THREE.BoxGeometry(1.5, 3, 1.5);
-          const obsMat = new THREE.MeshStandardMaterial({ color: 0x34495e });
+          const obsGeo = new THREE.BoxGeometry(1.8, 3.5, 1.8);
+          const obsMat = new THREE.MeshStandardMaterial({ color: 0xff4757 }); // Merah Ceria
           const obs = new THREE.Mesh(obsGeo, obsMat);
-          obs.position.set(lanes[Math.floor(Math.random()*3)], 1.5, -i * 10 - 15);
+          obs.position.set(lanes[Math.floor(Math.random()*3)], 1.75, -i * 10 - 15);
+          
+          // Jendela Gedung
+          const winGeo = new THREE.PlaneGeometry(1.2, 2.5);
+          const winMat = new THREE.MeshBasicMaterial({ color: 0xffffffff });
+          const windowMesh = new THREE.Mesh(winGeo, winMat);
+          windowMesh.position.set(0, 0, 0.91);
+          obs.add(windowMesh);
+
           scene.add(obs);
           obstacles.push(obs);
         }
@@ -227,14 +293,12 @@
       requestAnimationFrame(animate);
 
       if (isPlaying) {
-        // Move Elements Toward Player
         coins.forEach(coin => {
           coin.position.z += speed;
           coin.rotation.z += 0.05;
 
-          // Deteksi Tabrakan Koin
           if (playerGroup.position.distanceTo(coin.position) < 1.2) {
-            coin.position.z = 20; // Pindahkan jauh
+            coin.position.z = 20;
             playerData.koin += 1;
             playerData.skor += 10;
             updateHUD();
@@ -244,7 +308,6 @@
 
         obstacles.forEach(obs => {
           obs.position.z += speed;
-          // Tabrakan Rintangan (Reset posisi sedikit mundur)
           if (playerGroup.position.distanceTo(obs.position) < 1.3) {
             playerGroup.position.x = 0;
             obs.position.z = 20;
@@ -254,6 +317,12 @@
       }
 
       renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
     function updateHUD() {
@@ -275,7 +344,6 @@
       isPlaying = true;
     }
 
-    // Buka Modal Kuis (Bisa Dipanggil Kapan Saja)
     function openQuizModal() {
       isPlaying = false;
       const qIndex = (playerData.level - 1) % quizData.length;
@@ -288,7 +356,7 @@
       optContainer.innerHTML = '';
       currentQuiz.opts.forEach((opt, idx) => {
         optContainer.innerHTML += `
-          <label style="display:block; margin: 8px 0; cursor:pointer;">
+          <label style="display:block; margin: 10px 0; cursor:pointer; font-weight: 500;">
             <input type="radio" name="quiz_opt" value="${idx}" ${idx===0?'checked':''}> ${opt}
           </label>`;
       });
@@ -296,14 +364,12 @@
       document.getElementById('modal-quiz').classList.remove('hidden');
     }
 
-    // Kirim Jawaban ke Backend Vercel -> Google Sheets
     async function submitAnswer() {
       const selected = document.querySelector('input[name="quiz_opt"]:checked');
       const ansVal = selected ? selected.value : "0";
       
-      playerData.skor += 50; // Bonus skor jawab kuis
+      playerData.skor += 50;
 
-      // Post Data Ke Vercel Backend
       try {
         await fetch('/api/leaderboard', {
           method: 'POST',
@@ -320,10 +386,7 @@
         console.log("Gagal posting skor:", e);
       }
 
-      // Naikkan Level
-      if (playerData.level < 10) {
-        playerData.level += 1;
-      }
+      if (playerData.level < 10) playerData.level += 1;
       
       document.getElementById('modal-quiz').classList.add('hidden');
       updateHUD();
@@ -331,7 +394,6 @@
       isPlaying = true;
     }
 
-    // Ambil Data Leaderboard
     async function openLeaderboard() {
       isPlaying = false;
       document.getElementById('modal-leaderboard').classList.remove('hidden');
