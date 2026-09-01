@@ -1,7 +1,7 @@
 const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL || "";
 
-export default async function handler(req, res) {
-  // Setup CORS Headers
+module.exports = async function handler(req, res) {
+  // Setup Header CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -20,7 +20,6 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "GOOGLE_SCRIPT_URL belum dikonfigurasi di Vercel!" });
       }
 
-      // Mengirim POST ke Google Script dengan text/plain & redirect follow
       const response = await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         headers: {
@@ -49,4 +48,4 @@ export default async function handler(req, res) {
       return res.status(500).json([]);
     }
   }
-}
+};
