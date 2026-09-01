@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SMK PINTAR - 3D Racing Game</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="form-overlay" class="overlay">
+        <div class="card rainbow-border">
+            <h1 class="title">SMK PINTAR</h1>
+            <p class="subtitle">SMK 17 MUNCAR</p>
+            <form id="student-form">
+                <div class="input-group">
+                    <label>Nama Lengkap Siswa</label>
+                    <input type="text" id="nama" placeholder="Masukkan nama lengkap" required>
+                </div>
+                <div class="input-group">
+                    <label>Nomor WhatsApp (+62...)</label>
+                    <input type="tel" id="whatsapp" placeholder="+6281234567890" pattern="^\+62[0-9]{9,13}$" required>
+                </div>
+                <button type="submit" class="btn-play">MULAIBERMAIN 🚗💨</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="hud" class="hidden">
+        <div class="hud-item">Level: <span id="hud-level">1</span>/10</div>
+        <div class="hud-item">Koin: <span id="hud-coins">0</span>/10</div>
+        <button id="btn-next-level" class="btn-next hidden">Ke Level Berikutnya ➡️</button>
+    </div>
+
+    <div id="controls" class="hidden">
+        <div class="control-btn" id="btn-up">⬆️</div>
+        <div class="control-row">
+            <div class="control-btn" id="btn-left">⬅️</div>
+            <div class="control-btn" id="btn-down">⬇️</div>
+            <div class="control-btn" id="btn-right">➡️</div>
+        </div>
+    </div>
+
+    <div id="quiz-overlay" class="overlay hidden">
+        <div class="card quiz-card">
+            <h2 id="quiz-title">Quiz Level</h2>
+            <p id="quiz-desc" class="desc"></p>
+            <div id="quiz-body"></div>
+            <button id="btn-submit-quiz" class="btn-play margin-top">Kirim Jawaban 🚀</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
