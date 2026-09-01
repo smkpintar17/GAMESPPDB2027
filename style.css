@@ -1,0 +1,142 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #111;
+}
+
+.hidden { display: none !important; }
+
+/* Styling Pop-up Overlay Colorful */
+.overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.card {
+    background: linear-gradient(135deg, #ff007f, #7928ca, #0284c7);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    color: white;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+.title {
+    font-size: 2.2rem;
+    font-weight: 900;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+    color: #ffe600;
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: #00f2fe;
+}
+
+.input-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.input-group input, textarea, select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    color: #333;
+}
+
+.btn-play, .btn-next {
+    width: 100%;
+    padding: 14px;
+    background: #00e676;
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.btn-next {
+    position: absolute;
+    top: 70px; right: 20px;
+    width: auto;
+    padding: 10px 15px;
+    background: #ffeb3b;
+}
+
+/* UI Game Overlay Controls (HP Friendly) */
+#hud {
+    position: absolute;
+    top: 15px; left: 15px; right: 15px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 10;
+}
+
+.hud-item {
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border: 2px solid #00f2fe;
+}
+
+#controls {
+    position: absolute;
+    bottom: 20px; right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+}
+
+.control-row { display: flex; gap: 10px; }
+
+.control-btn {
+    width: 60px; height: 60px;
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    touch-action: manipulation;
+}
+
+.control-btn:active { background: rgba(255, 255, 255, 0.7); }
+.margin-top { margin-top: 15px; }
+.desc { font-size: 0.95rem; margin-bottom: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; }
