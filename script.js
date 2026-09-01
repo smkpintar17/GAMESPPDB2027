@@ -1,5 +1,5 @@
 // GANTI URL INI DENGAN URL GOOGLE APPS SCRIPT ANDA
-const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYelpynKr8JSuroFz3YPNh10wVl7q2h4cWncEOgMDHjNodjnvvZDcwGtrpGCMMTsq2/exec";
 
 // Game State
 let currentLevel = 1;
