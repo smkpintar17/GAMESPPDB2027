@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SMK PINTAR - Runner Game 3D (SMK 17 MUNCAR)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+    body { overflow: hidden; background: #87CEEB; }
+    #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+    
+    /* Overlay UI */
+    .overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      background: rgba(255, 255, 255, 0.95); z-index: 10; padding: 20px; text-align: center;
+      overflow-y: auto;
+    }
+    .card {
+      background: #FFF; padding: 25px; border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15); max-width: 420px; width: 100%;
+      border: 4px solid #FF4081; margin: auto;
+    }
+    h1 { color: #FF4081; font-size: 26px; margin-bottom: 5px; text-shadow: 1px 1px #FFD700; }
+    h2 { color: #3F51B5; font-size: 16px; margin-bottom: 15px; }
+    p { color: #555; font-size: 14px; margin-bottom: 10px; line-height: 1.4; }
+    input, select, textarea {
+      width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #3F51B5;
+      border-radius: 10px; font-size: 14px; outline: none;
+    }
+    button {
+      width: 100%; padding: 14px; background: #FF4081; color: white;
+      border: none; border-radius: 10px; font-size: 16px; font-weight: bold;
+      cursor: pointer; margin-top: 10px; box-shadow: 0 4px #C2185B;
+    }
+    button:active { transform: translateY(2px); box-shadow: 0 2px #C2185B; }
+    .btn-secondary { background: #3F51B5; box-shadow: 0 4px #1A237E; margin-top: 8px; }
+
+    /* HUD Game */
+    #hud {
+      position: absolute; top: 15px; left: 15px; z-index: 5;
+      font-size: 16px; font-weight: bold; color: #FFF;
+      text-shadow: 2px 2px 4px #000; display: none; background: rgba(0,0,0,0.4);
+      padding: 10px 15px; border-radius: 10px; border: 2px solid #FF4081;
+    }
+
+    /* Leaderboard Table */
+    .leaderboard-table {
+      width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px;
+    }
+    .leaderboard-table th, .leaderboard-table td {
+      border: 1px solid #DDD; padding: 8px; text-align: center;
+    }
+    .leaderboard-table th { background-color: #3F51B5; color: white; }
+    .leaderboard-table tr:nth-child(even) { background-color: #F2F2F2; }
+
+    .hidden { display: none !important; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="hud-nama">Siswa: -</div>
+    <div id="hud-level">Level: 1 / 10</div>
+    <div id="hud-koin">Koin: 0 / 10</div>
+    <div id="hud-skor">Skor Total: 0</div>
+  </div>
+
+  <!-- Form Login Awal -->
+  <div id="login-modal" class="overlay">
+    <div class="card">
+      <h1>SMK PINTAR</h1>
+      <h2>SMK 17 MUNCAR</h2>
+      <p>Subway Princess Runner Game - Kumpulkan Koin & Selesaikan Kuis Jurusan!</p>
+      <input type="text" id="input-nama" placeholder="Nama Lengkap Siswa" required>
+      <input type="tel" id="input-wa" placeholder="Nomor WhatsApp (+62...)" value="+62" required>
+      <button onclick="startGame()">MULAI BERMAIN</button>
+      <button class="btn-secondary" onclick="openLeaderboard()">LIHAT LEADERBOARD</button>
+    </div>
+  </div>
+
+  <!-- Modal Kuis Antar Level -->
+  <div id="quiz-modal" class="overlay hidden">
+    <div class="card">
+      <h1 id="quiz-title">Kuis Level 1</h1>
+      <p id="quiz-desc"></p>
+      <div id="quiz-content"></div>
+      <button onclick="submitQuiz()">KIRIM & LANJUT LEVEL</button>
+    </div>
+  </div>
+
+  <!-- Modal Leaderboard -->
+  <div id="leaderboard-modal" class="overlay hidden">
+    <div class="card">
+      <h1>LEADERBOARD</h1>
+      <h2>SMK PINTAR TOP SCORE</h2>
+      <div style="max-height: 250px; overflow-y: auto;">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Nama</th>
+              <th>Lvl</th>
+              <th>Skor</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <tr><td colspan="4">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn-secondary" onclick="closeLeaderboard()">KEMBALI</button>
+    </div>
+  </div>
+
+  <script>
+    let playerData = { nama: "", wa: "", level: 1, koin: 0, totalSkor: 0 };
+    
+    // Soal & Penjelasan 10 Level SMK 17 Muncar (SMK PINTAR)
+    let quizData = {
+      1: { title: "Level 1: Akuntansi & Keuangan Lembaga (AKL)", desc: "Selamat! Jurusan AKL mempelajari pembukuan, akuntansi keuangan digital, dan manajemen kas perusahaan.", question: "Apa keunggulan jurusan AKL yang kamu ketahui?", type: "text" },
+      2: { title: "Level 2: Bisnis Daring & Pemasaran (BDP)", desc: "BDP fokus pada Digital Marketing, E-Commerce, Social Media Strategy, dan Kewirausahaan.", question: "Apakah kamu berminat belajar bisnis online di jurusan BDP?", type: "select", options: ["Sangat Berminat", "Berminat", "Cukup"] },
+      3: { title: "Level 3: Perhotelan (PH)", desc: "Jurusan PH melatih keterampilan hospitality, housekeeping, food service, dan pelayanan standar hotel bintang.", question: "Bagaimana pendapatmu tentang fasilitas Perhotelan SMK 17 Muncar?", type: "text" },
+      4: { title: "Level 4: Rekayasa Perangkat Lunak (RPL)", desc: "RPL mempelajari Pemrograman Web, Mobile Apps, Database, dan Game Development.", question: "Apakah kamu ingin bisa membuat aplikasi/game sendiri?", type: "select", options: ["Ya, Sangat Ingin!", "Ingin Tahu Lebih Lanjut"] },
+      5: { title: "Level 5: Teknik Otomotif (TO)", desc: "TO fokus pada pemeliharaan mesin sepeda motor, mobil, sistem injeksi, dan kelistrikan kendaraan.", question: "Apa hal paling menarik dari bidang Otomotif menurutmu?", type: "text" },
+      6: { title: "Level 6: Teknik Pengelasan (TP)", desc: "TP melatih keahlian las industri (SMAW, GMAW), fabrikasi logam, dan konstruksi baja.", question: "Teknik pengelasan sangat dibutuhkan di industri manufaktur & perkapalan. Setuju?", type: "select", options: ["Sangat Setuju", "Setuju"] },
+      7: { title: "Level 7: Rencana Setelah SMP", desc: "Perjalananmu setelah lulus SMP sangat menentukan masa depan karirmu.", question: "Kamu setelah lulus SMP mau ke mana?", type: "text" },
+      8: { title: "Level 8: Minat Jurusan", desc: "SMK PINTAR menyediakan berbagai jurusan unggulan siap kerja.", question: "Jika kamu masuk ke SMK PINTAR, mau ambil jurusan apa?", type: "text" },
+      9: { title: "Level 9: Impian Jurusan", desc: "Tentukan prioritas jurusan pilihan utamamu di SMK PINTAR.", question: "Jurusan apa yang paling kamu inginkan agar diterima di SMK PINTAR?", type: "text" },
+      10: { title: "Level 10: Hobi & Cita-Citamu", desc: "Selamat telah menyelesaikan semua rintangan! Tuliskan harapanmu dari hati.", question: "Tulis secara JUJUR dari HATI: Apa Hobi dan Cita-Citamu? Semoga SMK PINTAR Jembatan untuk meraih suksesmu!", type: "textarea" }
+    };
+
+    let scene, camera, renderer, player, obstacles = [], coins = [];
+    let lane = 0; // -1: Kiri, 0: Tengah, 1: Kanan
+    let isPlaying = false;
+    let targetX = 0;
+
+    function init3D() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x87CEEB);
+      scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 5, 10);
+      camera.lookAt(0, 2, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      container.appendChild(renderer.domElement);
+
+      // Light
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(10, 20, 10);
+      scene.add(dirLight);
+
+      // Track / Jalan
+      const trackGeo = new THREE.PlaneGeometry(12, 1000);
+      const trackMat = new THREE.MeshBasicMaterial({ color: 0x555555 });
+      const track = new THREE.Mesh(trackGeo, trackMat);
+      track.rotation.x = -Math.PI / 2;
+      scene.add(track);
+
+      // Karakter Utama (Princess - Baju Pink Angka 17)
+      const playerGroup = new THREE.Group();
+      
+      const bodyGeo = new THREE.CylinderGeometry(0.5, 0.7, 1.8, 16);
+      const bodyMat = new THREE.MeshPhongMaterial({ color: 0xFF1493 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 1.4;
+      playerGroup.add(body);
+
+      // Angka 17 di Dada Baju
+      const canvas = document.createElement('canvas');
+      canvas.width = 128; canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FF1493'; ctx.fillRect(0,0,128,128);
+      ctx.fillStyle = '#FFFFFF'; ctx.font = 'Bold 80px Arial';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('17', 64, 64);
+      
+      const numTex = new THREE.CanvasTexture(canvas);
+      const numGeo = new THREE.PlaneGeometry(0.5, 0.5);
+      const numMat = new THREE.MeshBasicMaterial({ map: numTex, transparent: true });
+      const numMesh = new THREE.Mesh(numGeo, numMat);
+      numMesh.position.set(0, 1.5, 0.51);
+      playerGroup.add(numMesh);
+
+      // Kepala
+      const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
+      const headMat = new THREE.MeshPhongMaterial({ color: 0xFFDAB9 });
+      const head = new THREE.Mesh(headGeo, headMat);
+      head.position.y = 2.5;
+      playerGroup.add(head);
+
+      player = playerGroup;
+      scene.add(player);
+
+      setupControls();
+      createLevelEnvironment();
+      animate();
+    }
+
+    // Generator Halangan (Gedung Sekolah) & Koin Emas
+    function createLevelEnvironment() {
+      obstacles.forEach(o => scene.remove(o));
+      coins.forEach(c => scene.remove(c));
+      obstacles = []; coins = [];
+
+      const lanes = [-3.5, 0, 3.5];
+
+      for (let i = 1; i <= 10; i++) {
+        const zPos = -i * 25;
+        const obstacleLane = lanes[Math.floor(Math.random() * 3)];
+        
+        // Gedung Sekolah (Rintangan)
+        const bGeo = new THREE.BoxGeometry(2.8, 5, 2);
+        const bMat = new THREE.MeshPhongMaterial({ color: 0x3F51B5 });
+        const building = new THREE.Mesh(bGeo, bMat);
+        building.position.set(obstacleLane, 2.5, zPos);
+        scene.add(building);
+        obstacles.push(building);
+
+        // Koin Emas
+        const coinLane = lanes.find(l => l !== obstacleLane);
+        const cGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16);
+        const cMat = new THREE.MeshPhongMaterial({ color: 0xFFD700 });
+        const coin = new THREE.Mesh(cGeo, cMat);
+        coin.rotation.x = Math.PI / 2;
+        coin.position.set(coinLane, 1, zPos);
+        scene.add(coin);
+        coins.push(coin);
+      }
+    }
+
+    function setupControls() {
+      let startX = 0;
+      window.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+      window.addEventListener('touchend', e => {
+        let diff = e.changedTouches[0].clientX - startX;
+        if (diff > 30 && lane < 1) lane++;
+        if (diff < -30 && lane > -1) lane--;
+      });
+
+      window.addEventListener('keydown', e => {
+        if (e.key === "ArrowLeft" && lane > -1) lane--;
+        if (e.key === "ArrowRight" && lane < 1) lane++;
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (isPlaying) {
+        targetX = lane * 3.5;
+        player.position.x += (targetX - player.position.x) * 0.2;
+        player.position.z -= 0.3;
+
+        camera.position.z = player.position.z + 10;
+        camera.position.x = player.position.x * 0.3;
+
+        coins.forEach(c => c.rotation.z += 0.05);
+
+        // Ambil Koin
+        coins.forEach((c) => {
+          if (c.visible && player.position.distanceTo(c.position) < 1.2) {
+            c.visible = false;
+            playerData.koin++;
+            playerData.totalSkor += 100;
+            document.getElementById('hud-koin').innerText = `Koin: ${playerData.koin} / 10`;
+            document.getElementById('hud-skor').innerText = `Skor Total: ${playerData.totalSkor}`;
+
+            if (playerData.koin >= 10) {
+              finishLevel();
+            }
+          }
+        });
+
+        // Tabrakan Gedung Sekolah
+        obstacles.forEach(o => {
+          if (player.position.distanceTo(o.position) < 1.8) {
+            player.position.z += 5; // Terpental sedikit saat menabrak
+          }
+        });
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function startGame() {
+      const nama = document.getElementById('input-nama').value.trim();
+      const wa = document.getElementById('input-wa').value.trim();
+
+      if (!nama || !wa.startsWith('+62')) {
+        alert("Harap masukkan Nama Lengkap dan Nomor WhatsApp yang benar (Diawali +62)");
+        return;
+      }
+
+      playerData.nama = nama;
+      playerData.wa = wa;
+
+      document.getElementById('hud-nama').innerText = `Siswa: ${nama}`;
+      document.getElementById('login-modal').classList.add('hidden');
+      document.getElementById('hud').style.display = 'block';
+
+      init3D();
+      isPlaying = true;
+    }
+
+    function finishLevel() {
+      isPlaying = false;
+      showQuiz(playerData.level);
+    }
+
+    function showQuiz(lvl) {
+      const data = quizData[lvl];
+      document.getElementById('quiz-title').innerText = data.title;
+      document.getElementById('quiz-desc').innerText = data.desc;
+
+      let html = `<label style="display:block; text-align:left; font-weight:bold; margin-bottom:5px;">${data.question}</label>`;
+      
+      if (data.type === 'text') {
+        html += `<input type="text" id="quiz-input" placeholder="Ketik jawabanmu..." required>`;
+      } else if (data.type === 'textarea') {
+        html += `<textarea id="quiz-input" rows="4" placeholder="Tulis secara JUJUR dari HATI..." required></textarea>`;
+      } else if (data.type === 'select') {
+        html += `<select id="quiz-input">` + data.options.map(o => `<option value="${o}">${o}</option>`).join('') + `</select>`;
+      }
+
+      document.getElementById('quiz-content').innerHTML = html;
+      document.getElementById('quiz-modal').classList.remove('hidden');
+    }
+
+    async function submitQuiz() {
+      const val = document.getElementById('quiz-input').value;
+      if (!val) { alert("Isi jawaban kuis terlebih dahulu!"); return; }
+
+      // Kirim Data Kuis ke Vercel Serverless API / Google Sheets
+      try {
+        await fetch('/api/leaderboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nama: playerData.nama,
+            whatsapp: playerData.wa,
+            level: playerData.level,
+            jawaban: val,
+            skor: playerData.totalSkor
+          })
+        });
+      } catch(e) { console.error("Error kirim data kuis:", e); }
+
+      document.getElementById('quiz-modal').classList.add('hidden');
+
+      if (playerData.level < 10) {
+        playerData.level++;
+        playerData.koin = 0;
+        document.getElementById('hud-level').innerText = `Level: ${playerData.level} / 10`;
+        document.getElementById('hud-koin').innerText = `Koin: 0 / 10`;
+        
+        player.position.set(0, 0, 0);
+        lane = 0;
+        createLevelEnvironment();
+        isPlaying = true;
+      } else {
+        alert("Selamat! Kamu telah berhasil menyelesaikan seluruh 10 Level Kuis & Runner SMK PINTAR (SMK 17 MUNCAR)!");
+        openLeaderboard();
+      }
+    }
+
+    async function openLeaderboard() {
+      document.getElementById('leaderboard-modal').classList.remove('hidden');
+      const body = document.getElementById('leaderboard-body');
+      body.innerHTML = '<tr><td colspan="4">Memuat data...</td></tr>';
+
+      try {
+        const res = await fetch('/api/leaderboard');
+        const data = await res.json();
+        
+        if (data.length === 0) {
+          body.innerHTML = '<tr><td colspan="4">Belum ada data skor.</td></tr>';
+          return;
+        }
+
+        body.innerHTML = data.map((item, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${item.nama}</td>
+            <td>Lvl ${item.level}</td>
+            <td><b>${item.skor}</b></td>
+          </tr>
+        `).join('');
+      } catch(e) {
+        body.innerHTML = '<tr><td colspan="4">Gagal memuat data leaderboard.</td></tr>';
+      }
+    }
+
+    function closeLeaderboard() {
+      document.getElementById('leaderboard-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
